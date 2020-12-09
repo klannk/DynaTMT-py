@@ -276,7 +276,7 @@ class plain_text_input:
         Heavy_peptides=input[input[modi].str.contains('TMTK8|Label|TMTproK8',na=False)]
 
         print("Extraction Done","Extracted Peptides:", len(Heavy_peptides))
-        self.input_file = Heavy_peptides
+        return Heavy_peptides
 
 
     def extract_light (self):
@@ -293,10 +293,10 @@ class plain_text_input:
         light_peptides=input[~input[modi].str.contains('TMTK8|Label|TMTproK8',na=False)]
 
         print("Extraction Done","Extracted Peptides:", len(light_peptides))
-        self.input_file = light_peptides
+        
         return light_peptides
 
-    def baseline_correction(self,threshold=5,i_baseline=0,method='TI'):
+    def baseline_correction(self,input,threshold=5,i_baseline=0,method='sum'):
         '''This function takes the self.input_file DataFrame and substracts the baseline/noise channel from all other samples. The index of the
         baseline column is defaulted to 0. Set i_baseline=X to change baseline column.
 
@@ -308,7 +308,7 @@ class plain_text_input:
 
         Modifies self.input_file variable and returns a pandas df.
         '''
-        input = self.input_file
+        
         print("Baseline correction")
         channels=self.abundances
         MPA = self.mpa

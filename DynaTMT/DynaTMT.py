@@ -186,13 +186,14 @@ class PD_input:
         print("Normalization done")
         self.input_file = input
 
-    def sum_peptides_for_proteins(self,input):
+    def sum_peptides_for_proteins(self):
         '''This function takes a peptide/PSM level DataFrame stored in self.input_file and performs Protein quantification rollup based
         on the sum of all corresponding peptides.
 
         Returns a Protein level DataFrame and modifies self.input_file
         '''
         print('Calculate Protein quantifications from PSM')
+        input = self.input_file
         channels = [col for col in input.columns if 'Abundance:' in col]
         MPA=list([col for col in input.columns if 'Master Protein Accession' in col])
         MPA=MPA[0]

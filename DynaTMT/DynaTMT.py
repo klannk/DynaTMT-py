@@ -15,7 +15,12 @@ class PD_input:
         in the class variable self.input_file.
         '''
         self.input_file = input
-        
+    def filter_peptides(self):
+        input_file1 = self.input_file
+        input_file1 = input_file1[~input_file1['Master Protein Accessions'].str.contains(';',na=False)]
+        input_file1 = input_file1[input_file1['Contaminant']==False]
+        self.input_file = input_file1 
+           
     def IT_adjustment(self):
         '''This function adjusts the input DataFrame stored in the class variable self.input_file for Ion injection times.
         Abundance channels should contain "Abundance:" string and injection time uses "Ion Inject Time" as used by ProteomeDiscoverer
@@ -36,7 +41,7 @@ class PD_input:
         '''This function takes the class variable self.input_file dataframe and extracts all heavy labelled peptides. Naming of the 
         Modifications: Arg10: should contain Label, TMTK8, TMTproK8. Strings for modifications can be edited below for customisation.
 
-        writes filtered self.input_file back to class
+        Returns heavy peptide DF
 
         '''
         input = self.input_file
@@ -44,7 +49,7 @@ class PD_input:
         modi=list([col for col in input.columns if 'Modification' in col])
         modi=modi[0]
         '''Change Modification String here'''
-        Heavy_peptides=input[input[modi].str.contains('TMTK8|Label|TMTproK8',na=False)]
+        Heavy_peptides=input[input[modi].str.contains('TMTK8|Label|TMTproK8|TMTK4|TMTK6',na=False)]
 
         print("Extraction Done","Extracted Peptides:", len(Heavy_peptides))
         return Heavy_peptides
@@ -63,13 +68,13 @@ class PD_input:
         modi=modi[0]
         
         
-        light_peptides=input[~input[modi].str.contains('TMTK8|Label|TMTproK8',na=False)]
+        light_peptides=input[~input[modi].str.contains('TMTK8|Label|TMTproK8|TMTK4|TMTK6',na=False)]
 
         print("Extraction Done","Extracted Peptides:", len(light_peptides))
         return light_peptides
 
     def baseline_correction(self,input,threshold=5,i_baseline=0,method='sum'):
-        '''This function takes the self.input_file DataFrame and substracts the baseline/noise channel from all other samples. The index of the
+        '''This function takes the input_file DataFrame and substracts the baseline/noise channel from all other samples. The index of the
         baseline column is defaulted to 0. Set i_baseline=X to change baseline column.
 
         Threshold: After baseline substraction the remaining average signal has to be above threshold to be included. Parameter is set with threshold=X.
@@ -121,6 +126,28 @@ class PD_input:
         self.input_file = result_df
         return result_df
 
+    def baseline_correction_peptide_return(self,input_file,threshold=5,i_baseline=0):#TODO Make available for together analyzed data
+        print("Baseline correction")
+        channels=[col for col in input_file.columns if 'Abundance:' in col]
+        MPA = [col for col in input_file.columns if 'Master Protein Accessions' in col]
+        print(MPA)
+        MPA = MPA[0]
+        print(MPA)
+        protein_groups=input_file.groupby(by=[MPA],sort=False)
+        results={}
+    
+        
+        temp_data = input_file[channels]
+        baseline_channel=channels[i_baseline]
+        baseline=temp_data[baseline_channel]
+        temp_data[channels]=temp_data[channels].subtract(baseline,axis='index')
+        temp_data['Mean']=temp_data[channels].mean(axis=1)
+        
+        
+        temp_data[temp_data < 0]=0 # replace negative abundances with 0
+        temp_data=temp_data.loc[temp_data['Mean'] > threshold] # set S/N threshold for each PSM
+        input_file[channels]=temp_data[channels]
+        return input_file
 
     def statistics(self, input):
         '''This function provides summary statistics for quality control assessment from Proteome Discoverer Output.
@@ -186,14 +213,14 @@ class PD_input:
         print("Normalization done")
         self.input_file = input
 
-    def sum_peptides_for_proteins(self):
+    def sum_peptides_for_proteins(self,input):
         '''This function takes a peptide/PSM level DataFrame stored in self.input_file and performs Protein quantification rollup based
         on the sum of all corresponding peptides.
 
         Returns a Protein level DataFrame and modifies self.input_file
         '''
         print('Calculate Protein quantifications from PSM')
-        input = self.input_file
+        
         channels = [col for col in input.columns if 'Abundance:' in col]
         MPA=list([col for col in input.columns if 'Master Protein Accession' in col])
         MPA=MPA[0]
@@ -217,6 +244,9 @@ class PD_input:
         input[channels]=np.log2(input[channels])
         print("Normalization done")
         self.input_file = input
+    
+    def return_file(self):
+        return self.input_file
 
 class plain_text_input:
     '''This class contains functions to analyze pSILAC data based on a plain text input file. The column names can be freely chosen, as
@@ -246,6 +276,11 @@ class plain_text_input:
             self.modifications = self.input_columns[1]
             self.mpa = self.input_columns[0]
             
+    def filter_peptides(self):
+        input_file1 = self.input_file
+        input_file1 = input_file1[~input_file1['Master Protein Accessions'].str.contains(';',na=False)]
+        input_file1 = input_file1[input_file1['Contaminant']==False]
+        self.input_file = input_file1  
 
     def IT_adjustment(self):
         '''This function adjusts the input DataFrame stored in the class variable self.input_file for Ion injection times.
@@ -266,7 +301,7 @@ class plain_text_input:
         '''This function takes the class variable self.input_file dataframe and extracts all heavy labelled peptides. Naming of the 
         Modifications: Arg10: should contain Label, TMTK8, TMTproK8. Strings for modifications can be edited below for customisation.
 
-        writes filtered self.input_file back to class
+        Returns heavy peptide DF
 
         '''
         input = self.input_file
@@ -274,7 +309,7 @@ class plain_text_input:
         modi=self.modifications
         
         
-        Heavy_peptides=input[input[modi].str.contains('TMTK8|Label|TMTproK8',na=False)]
+        Heavy_peptides=input[input[modi].str.contains('TMTK8|Label|TMTproK8|TMTK4|TMTK6',na=False)]
 
         print("Extraction Done","Extracted Peptides:", len(Heavy_peptides))
         return Heavy_peptides
@@ -291,7 +326,7 @@ class plain_text_input:
         modi=self.modifications
         
         
-        light_peptides=input[~input[modi].str.contains('TMTK8|Label|TMTproK8',na=False)]
+        light_peptides=input[~input[modi].str.contains('TMTK8|Label|TMTproK8|TMTK4|TMTK6',na=False)]
 
         print("Extraction Done","Extracted Peptides:", len(light_peptides))
         
@@ -420,3 +455,29 @@ class plain_text_input:
         
         print("Combination done")
         return protein_df[channels]
+
+    def baseline_correction_peptide_return(self,input_file,threshold=5,i_baseline=0):#TODO Make available for together analyzed data
+        print("Baseline correction")
+        channels=[col for col in input_file.columns if 'Abundance:' in col]
+        MPA = [col for col in input_file.columns if 'Master Protein Accessions' in col]
+        print(MPA)
+        MPA = MPA[0]
+        print(MPA)
+        protein_groups=input_file.groupby(by=[MPA],sort=False)
+        results={}
+    
+        
+        temp_data = input_file[channels]
+        baseline_channel=channels[i_baseline]
+        baseline=temp_data[baseline_channel]
+        temp_data[channels]=temp_data[channels].subtract(baseline,axis='index')
+        temp_data['Mean']=temp_data[channels].mean(axis=1)
+        
+        
+        temp_data[temp_data < 0]=0 # replace negative abundances with 0
+        temp_data=temp_data.loc[temp_data['Mean'] > threshold] # set S/N threshold for each PSM
+        input_file[channels]=temp_data[channels]
+        return input_file
+        
+    def return_file(self):
+        return self.input_file

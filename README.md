@@ -102,6 +102,14 @@ Method: The method parameter sets the method for protein wolluquantification. De
 the corresponding protein. Alternatives are 'median' or 'mean'. Ifno or invalid input is given it uses 'sum'. 
 Modifies self.input_file variable and returns a pandas df.
 
+    baseline_correction_peptide_return(self,input_file,threshold=5,i_baseline=0,random=False,include_negatives=False)
+
+This function takes the self.input_file DataFrame and substracts the baseline/noise channel from all other samples and returns a peptide level DataFrame. The index of the
+baseline column is defaulted to 0. Set i_baseline=X to change baseline column. 
+Threshold: After baseline substraction the remaining average  signal has to be above threshold to be included. Parameter is set with threshold=X.
+This prevents very low remaining signal peptides to producartificially high fold changes. Has to be determined empirically. By default negative values after baseline subtraction are replaced with zeros. For usage with linear models to avoid zero inflation two options exis: Either use include negatives = True, to avoid the replacement with zero values or use include_negatives = False and random=True to replace the values 
+
+
     statistics(self, input)
 This function provides summary statistics for quality control assessment from Proteome Discoverer Output.
 

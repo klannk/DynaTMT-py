@@ -3,7 +3,7 @@ from scipy.stats import trim_mean
 import pandas as pd
 import numpy as np
 from numpy.random import random
-
+random_float = np.random.RandomState(69)
 
 class PD_input:
     '''Class containing functions to analyze the default peptide/PSM output from ProteomeDiscoverer. All column names are assumed
@@ -126,7 +126,7 @@ class PD_input:
         self.input_file = result_df
         return result_df
 
-    def baseline_correction_peptide_return(self,input_file,threshold=5,i_baseline=0,random=None):#TODO Make available for together analyzed data
+    def baseline_correction_peptide_return(self,input_file,threshold=5,i_baseline=0,random=False,include_negatives=False):#TODO Make available for together analyzed data
         print("Baseline correction")
         channels=[col for col in input_file.columns if 'Abundance:' in col]
         MPA = [col for col in input_file.columns if 'Master Protein Accessions' in col]
@@ -139,10 +139,15 @@ class PD_input:
         temp_data[channels]=temp_data[channels].subtract(baseline,axis='index')
         temp_data['Mean']=temp_data[channels].mean(axis=1)
         
-        if random is None:
+        if (include_negatives==False and random==False):
             temp_data[temp_data < 0]=0 # replace negative abundances with 0
+        elif (include_negatives == False and random ==True):
+            for channel in channels:
+                temp_data[channel] = np.where(temp_data[channel] < 0, random_float.random_sample(size=len(temp_data)),temp_data[channel])
+        elif include_negatives == True:
+            pass
         else:
-            temp_data = np.where(temp_data < 0, random(size=len(temp_data)))
+            pass
         temp_data=temp_data.loc[temp_data['Mean'] > threshold] # set S/N threshold for each PSM
         input_file[channels]=temp_data[channels]
         return input_file
@@ -471,7 +476,8 @@ class plain_text_input:
         if random is None:
             temp_data[temp_data < 0]=0 # replace negative abundances with 0
         else:
-            temp_data = np.where(temp_data < 0, random(size=len(temp_data)))
+            for channel in channels:
+                temp_data[channel] = np.where(temp_data[channel] < 0, np.random.random(size=len(temp_data)),temp_data[channel])
         temp_data=temp_data.loc[temp_data['Mean'] > threshold] # set S/N threshold for each PSM
         input_file[channels]=temp_data[channels]
         return input_file

@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="DynaTMT-py", 
-    version="0.0.5",
+    version="0.2.1",
     author="Kevin Klann",
     author_email="klann@em.uni-frankfurt.de",
     description="Python package to analyse pSILAC TMT data",

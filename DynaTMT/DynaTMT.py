@@ -1,3 +1,22 @@
+'''
+
+    DynaTMT-py - a python package to process SILAC/TMT proteomics data
+    Copyright (C) 2021  Kevin Klann
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+'''
 from scipy import stats
 from scipy.stats import trim_mean
 import pandas as pd
@@ -216,7 +235,48 @@ class PD_input:
         print("Normalization done")
         self.input_file = input
 
-    def sum_peptides_for_proteins(self,input):
+    def protein_rollup(self,input_file,method='sum'):
+        channels = [col for col in input_file.columns if 'Abundance:' in col]
+        MPA=list([col for col in input_file.columns if 'Master Protein Accession' in col])
+        MPA=MPA[0]
+        PSM_grouped=input_file.groupby(by=[MPA])
+        result={}
+        if method == 'sum':
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                sums=temp[channels].sum()
+                result[group]=sums
+        elif method == 'mean':
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                means = temp[channels].mean()
+                result[group]=means
+
+        elif method == 'median':
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                medians = temp[channels].median()
+                result[group] = medians
+                medians = temp[channels].median()
+                result[group] = medians
+        else:
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                medians = temp[channels].median()
+                result[group] = medians
+                sums=temp[channels].sum()
+                result[group]=sums
+        
+
+            
+        
+        protein_df=pd.DataFrame.from_dict(result, orient='index',columns=channels)
+        
+        
+        return protein_df
+
+
+    def sum_peptides_for_proteins(self,input_file):
         '''This function takes a peptide/PSM level DataFrame stored in self.input_file and performs Protein quantification rollup based
         on the sum of all corresponding peptides.
 
@@ -224,10 +284,10 @@ class PD_input:
         '''
         print('Calculate Protein quantifications from PSM')
         
-        channels = [col for col in input.columns if 'Abundance:' in col]
-        MPA=list([col for col in input.columns if 'Master Protein Accession' in col])
+        channels = [col for col in input_file.columns if 'Abundance:' in col]
+        MPA=list([col for col in input_file.columns if 'Master Protein Accession' in col])
         MPA=MPA[0]
-        PSM_grouped=input.groupby(by=[MPA])
+        PSM_grouped=input_file.groupby(by=[MPA])
         result={}
         for group in PSM_grouped.groups:
             temp=PSM_grouped.get_group(group)
@@ -279,11 +339,6 @@ class plain_text_input:
             self.modifications = self.input_columns[1]
             self.mpa = self.input_columns[0]
             
-    def filter_peptides(self):
-        input_file1 = self.input_file
-        input_file1 = input_file1[~input_file1['Master Protein Accessions'].str.contains(';',na=False)]
-        input_file1 = input_file1[input_file1['Contaminant']==False]
-        self.input_file = input_file1  
 
     def IT_adjustment(self):
         '''This function adjusts the input DataFrame stored in the class variable self.input_file for Ion injection times.
@@ -437,6 +492,47 @@ class plain_text_input:
         input[channels]=input[channels].divide(norm_factors, axis=1)
         print("Normalization done")
         self.input_file = input
+
+    def protein_rollup(self,input_file,method='sum'):
+        channels = self.abundances
+        MPA = self.mpa
+        PSM_grouped=input_file.groupby(by=[MPA])
+        result={}
+        if method == 'sum':
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                sums=temp[channels].sum()
+                result[group]=sums
+        elif method == 'mean':
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                means = temp[channels].mean()
+                result[group]=means
+
+        elif method == 'median':
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                medians = temp[channels].median()
+                result[group] = medians
+                medians = temp[channels].median()
+                result[group] = medians
+        else:
+            for group in PSM_grouped.groups:
+                temp=PSM_grouped.get_group(group)
+                medians = temp[channels].median()
+                result[group] = medians
+                sums=temp[channels].sum()
+                result[group]=sums
+        
+
+            
+        
+        protein_df=pd.DataFrame.from_dict(result, orient='index',columns=channels)
+        
+        
+        return protein_df
+
+
     def sum_peptides_for_proteins(self,input):
         '''This function takes a peptide/PSM level DataFrame stored in self.input_file and performs Protein quantification rollup based
         on the sum of all corresponding peptides.

@@ -167,7 +167,10 @@ class PD_input:
             pass
         else:
             pass
-        temp_data=temp_data.loc[temp_data['Mean'] > threshold] # set S/N threshold for each PSM
+        if threshold is None:
+            pass
+        else:
+            temp_data=temp_data.loc[temp_data['Mean'] >= threshold] # set S/N threshold for each PSM
         input_file[channels]=temp_data[channels]
         return input_file
 
@@ -555,7 +558,7 @@ class plain_text_input:
         print("Combination done")
         return protein_df[channels]
 
-    def baseline_correction_peptide_return(self,input_file,threshold=5,i_baseline=0,random=None):#TODO Make available for together analyzed data
+    def baseline_correction_peptide_return(self,input_file,threshold=5,i_baseline=0,random=False, include_negatives=False):#TODO Make available for together analyzed data
         print("Baseline correction")
         channels=self.abundances
         MPA = self.mpa
@@ -569,11 +572,15 @@ class plain_text_input:
         temp_data[channels]=temp_data[channels].subtract(baseline,axis='index')
         temp_data['Mean']=temp_data[channels].mean(axis=1)
         
-        if random is None:
+        if (include_negatives==False and random==False):
             temp_data[temp_data < 0]=0 # replace negative abundances with 0
-        else:
+        elif (include_negatives == False and random ==True):
             for channel in channels:
-                temp_data[channel] = np.where(temp_data[channel] < 0, np.random.random(size=len(temp_data)),temp_data[channel])
+                temp_data[channel] = np.where(temp_data[channel] < 0, random_float.random_sample(size=len(temp_data)),temp_data[channel])
+        elif include_negatives == True:
+            pass
+        else:
+            pass
         temp_data=temp_data.loc[temp_data['Mean'] > threshold] # set S/N threshold for each PSM
         input_file[channels]=temp_data[channels]
         return input_file

@@ -54,15 +54,19 @@ Here a dataframe is returned by the function
 **If you use normal pSILAC TMT data without mePROD baseline channels, you can stop here and extract also the light data, by calling extract_light()**
 
 ### Baseline normalisation
-Here the baseline is subtracted from all samples and protein quantification rollup is performed.
+Here the baseline is subtracted from all samples and a dataframe on peptide level is created.
 
 
-    output = processor.extract_heavy(extracted_heavy,threshold=5,       i_baseline=0,method='sum')
+    output = processor.baseline_correction_peptide_return(input_file,threshold=5,i_baseline=0,random=None)
 
+### Protein rollup
+To create a protein level dataset, protein rollup will be performed by using one of the three implemented methods: 'sum', 'mean' or 'median'. Default is sum.
+
+    output = processor.protein_rollup(output,method='sum')
 
 ### Store output
 
-    output.to_csv("PATH",sep='\t')
+    output.to_csv("PATH")
 
 
 
@@ -94,6 +98,7 @@ Returns light peptide Dataframe
 
     baseline_correction(self,input,threshold=5,i_baseline=0,method='sum')
 
+DECREPATED. Please use baseline_correction_peptide_return() instead and perform rollup with protein_rollup() function.
 This function takes the self.input_file DataFrame and substracts the baseline/noise channel from all other samples. The index of the
 baseline column is defaulted to 0. Set i_baseline=X to change baseline column. 
 Threshold: After baseline substraction the remaining average  signal has to be above threshold to be included. Parameter is set with threshold=X.
@@ -108,6 +113,10 @@ This function takes the self.input_file DataFrame and substracts the baseline/no
 baseline column is defaulted to 0. Set i_baseline=X to change baseline column. 
 Threshold: After baseline substraction the remaining average  signal has to be above threshold to be included. Parameter is set with threshold=X.
 This prevents very low remaining signal peptides to producartificially high fold changes. Has to be determined empirically. By default negative values after baseline subtraction are replaced with zeros. For usage with linear models to avoid zero inflation two options exis: Either use include negatives = True, to avoid the replacement with zero values or use include_negatives = False and random=True to replace the values 
+
+    protein_rollup(self, input_file,method='sum')
+
+This function performs protein level quantification rollup by either summing all peptide quantifications or building the mean/median. method can be 'sum','mean' or 'median'.
 
 
     statistics(self, input)

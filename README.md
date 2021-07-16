@@ -5,7 +5,7 @@ The **DynaTMT tool** can be used to analyze **m**ultiplexed **e**nhanced **pro**
 The package can also be used to analyse any pSILAC/TMT dataset. 
 ## Install
 
-    pip install DynaTMT
+    pip install DynaTMT-py
 
 ## Usage
 
